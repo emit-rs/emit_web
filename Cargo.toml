@@ -1,0 +1,37 @@
+[package]
+name = "emit_web"
+version = "0.1.0"
+authors = ["emit contributors"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/emit-rs/emit_web"
+description = "Instrument Web-based applications using emit."
+keywords = ["logging", "tracing", "metrics", "observability", "wasm", "web"]
+categories = ["development-tools::debugging"]
+edition = "2021"
+exclude = ["asset"]
+
+[dependencies.emit]
+version = "0.11"
+default-features = false
+features = ["std", "serde"]
+
+[dependencies.serde]
+version = "1"
+
+[dependencies.wasm-bindgen]
+version = "0.2"
+
+[dependencies.serde-wasm-bindgen]
+version = "0.6"
+
+[dependencies.js-sys]
+version = "0.3"
+
+[dev-dependencies.wasm-bindgen-test]
+version = "0.3"
+
+[workspace]
+members = [
+    "example",
+]

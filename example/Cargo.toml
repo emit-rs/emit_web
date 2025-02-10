@@ -1,0 +1,22 @@
+[package]
+name = "emit_web_example"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies.emit]
+version = "0.11"
+default-features = false
+features = ["std", "implicit_rt"]
+
+[dependencies.emit_web]
+path = "../"
+
+[dependencies.wasm-bindgen]
+version = "0.2"
+
+[dependencies.console_error_panic_hook]
+version = "0.1"
