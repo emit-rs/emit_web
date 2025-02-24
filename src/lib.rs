@@ -9,12 +9,12 @@ First, add `emit` and `emit_web` to your `Cargo.toml`:
 
 ```toml
 [dependencies.emit]
-version = "0.11"
+version = "1"
 default-features = false
 features = ["std", "implicit_rt"]
 
 [dependencies.emit_web]
-version = "0.1.0"
+version = "0.2.0"
 ```
 
 Ensure you set `default-features = false` on `emit`, so it won't try compile dependencies that aren't compatible with WebAssembly.
@@ -324,7 +324,7 @@ mod crypto {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, target_arch = "wasm32"))]
 mod tests {
     use super::*;
     use wasm_bindgen_test::*;
