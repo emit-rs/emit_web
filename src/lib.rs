@@ -3,6 +3,8 @@
 
 Use [`emit`](https://docs.rs/emit) in WebAssembly applications targeting NodeJS and the browser.
 
+`emit` itself and some emitters, like [`emit_otlp`](https://docs.rs/emit_otlp) support WebAssembly directly. This library includes support for emitting events to the [Console API](https://developer.mozilla.org/en-US/docs/Web/API/console). It also has alternative clocks and randomness using different web features. These aren't required for configuration, but can be used to more directly control the JavaScript APIs `emit` makes use of.
+
 # Getting started
 
 First, add `emit` and `emit_web` to your `Cargo.toml`:
@@ -10,14 +12,10 @@ First, add `emit` and `emit_web` to your `Cargo.toml`:
 ```toml
 [dependencies.emit]
 version = "1"
-default-features = false
-features = ["std", "implicit_rt"]
 
 [dependencies.emit_web]
 version = "0.2.0"
 ```
-
-Ensure you set `default-features = false` on `emit`, so it won't try compile dependencies that aren't compatible with WebAssembly.
 
 Next, configure `emit` to use web APIs in its runtime:
 
@@ -28,20 +26,21 @@ use wasm_bindgen::prelude::*;
 pub fn setup() {
     let _ = emit::setup()
         .emit_to(emit_web::console())
-        .with_clock(emit_web::date_clock())
-        .with_rng(emit_web::crypto_rng())
         .try_init();
 }
 ```
 
-The name of this function doesn't matter, you'll just need to call it somewhere early in your application.
-You'll need to at least override the default clock and source of randomness, otherwise you'll get events without timestamps, and spans without ids.
+The name of this `setup` function doesn't matter, you'll just need to call it somewhere early in your application.
 */
 
 #![doc(html_logo_url = "https://raw.githubusercontent.com/emit-rs/emit/main/asset/logo.svg")]
 #![deny(missing_docs)]
+#![cfg_attr(not(test), no_std)]
 
-use std::{ops::ControlFlow, time::Duration};
+extern crate alloc;
+
+use alloc::string::ToString;
+use core::{ops::ControlFlow, time::Duration};
 
 use emit::Props as _;
 use js_sys::{Date, Object, Reflect};
@@ -85,7 +84,7 @@ impl emit::Emitter for ConsoleEmitter {
         }
     }
 
-    fn blocking_flush(&self, _: std::time::Duration) -> bool {
+    fn blocking_flush(&self, _: core::time::Duration) -> bool {
         true
     }
 }
@@ -157,9 +156,9 @@ fn encode_props(props: impl emit::Props) -> JsValue {
 }
 
 fn to_jsvalue(v: impl serde::Serialize) -> JsValue {
-    match v.serialize(&serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true)) {
+    match ser::jsvalue(v) {
         Ok(value) => value,
-        Err(err) => err.into(),
+        Err(err) => err,
     }
 }
 
@@ -321,6 +320,349 @@ mod crypto {
     extern "C" {
         #[wasm_bindgen(js_namespace = crypto, js_name = getRandomValues)]
         pub fn get_random_values(buf: &mut [u8]);
+    }
+}
+
+mod ser {
+    use core::fmt;
+    use alloc::string::ToString;
+
+    use js_sys::{Array, Object};
+    use serde::ser::{
+        Error, Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant,
+        SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, Serializer, StdError,
+    };
+    use wasm_bindgen::prelude::*;
+
+    pub fn jsvalue(v: impl Serialize) -> Result<JsValue, JsValue> {
+        v.serialize(JsSerializer).map_err(|e| JsValue::from(e.to_string()))
+    }
+
+    #[derive(Debug)]
+    struct JsError;
+
+    impl fmt::Display for JsError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str("failed to serialize a value to JavaScript")
+        }
+    }
+
+    impl StdError for JsError {}
+
+    impl Error for JsError {
+        fn custom<T>(_: T) -> Self
+        where
+            T: fmt::Display,
+        {
+            JsError
+        }
+    }
+
+    struct JsSerializer;
+
+    struct JsArraySerializer {
+        variant: Option<&'static str>,
+        result: Array,
+    }
+
+    struct JsObjectSerializer {
+        variant: Option<&'static str>,
+        result: Object,
+    }
+
+    impl Serializer for JsSerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+        type SerializeSeq = JsArraySerializer;
+        type SerializeTuple = JsArraySerializer;
+        type SerializeTupleStruct = JsArraySerializer;
+        type SerializeTupleVariant = JsArraySerializer;
+        type SerializeMap = JsObjectSerializer;
+        type SerializeStruct = JsObjectSerializer;
+        type SerializeStructVariant = JsObjectSerializer;
+
+        fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_unit_variant(
+            self,
+            name: &'static str,
+            variant_index: u32,
+            variant: &'static str,
+        ) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_newtype_struct<T>(
+            self,
+            name: &'static str,
+            value: &T,
+        ) -> Result<Self::Ok, Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn serialize_newtype_variant<T>(
+            self,
+            name: &'static str,
+            variant_index: u32,
+            variant: &'static str,
+            value: &T,
+        ) -> Result<Self::Ok, Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_tuple_struct(
+            self,
+            name: &'static str,
+            len: usize,
+        ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_tuple_variant(
+            self,
+            name: &'static str,
+            variant_index: u32,
+            variant: &'static str,
+            len: usize,
+        ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_struct(
+            self,
+            name: &'static str,
+            len: usize,
+        ) -> Result<Self::SerializeStruct, Self::Error> {
+            todo!()
+        }
+
+        fn serialize_struct_variant(
+            self,
+            name: &'static str,
+            variant_index: u32,
+            variant: &'static str,
+            len: usize,
+        ) -> Result<Self::SerializeStructVariant, Self::Error> {
+            todo!()
+        }
+    }
+
+    impl SerializeSeq for JsArraySerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+
+        fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+    }
+
+    impl SerializeTuple for JsArraySerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+
+        fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+    }
+
+    impl SerializeTupleStruct for JsArraySerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+
+        fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+    }
+
+    impl SerializeTupleVariant for JsArraySerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+
+        fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+    }
+
+    impl SerializeMap for JsObjectSerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+
+        fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+    }
+
+    impl SerializeStruct for JsObjectSerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+
+        fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
+    }
+
+    impl SerializeStructVariant for JsObjectSerializer {
+        type Ok = JsValue;
+        type Error = JsError;
+
+        fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+        where
+            T: ?Sized + Serialize,
+        {
+            todo!()
+        }
+
+        fn end(self) -> Result<Self::Ok, Self::Error> {
+            todo!()
+        }
     }
 }
 
