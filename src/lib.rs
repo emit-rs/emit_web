@@ -14,7 +14,7 @@ First, add `emit` and `emit_web` to your `Cargo.toml`:
 version = "1"
 
 [dependencies.emit_web]
-version = "0.2.0"
+version = "0.2.1"
 ```
 
 Next, configure `emit` to use web APIs in its runtime:
