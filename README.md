@@ -2,7 +2,7 @@
 
 [![web](https://github.com/emit-rs/emit_web/actions/workflows/web.yml/badge.svg)](https://github.com/emit-rs/emit_web/actions/workflows/web.yml)
 
-[Current docs](https://docs.rs/emit_web/0.2.0/emit_web/index.html)
+[Current docs](https://docs.rs/emit_web/0.2.1/emit_web/index.html)
 
 Use [`emit`](https://docs.rs/emit) in WebAssembly applications targeting NodeJS and the browser.
 
@@ -20,7 +20,7 @@ version = "1"
 features = ["std", "implicit_rt"]
 
 [dependencies.emit_web]
-version = "0.2.0"
+version = "0.2.1"
 ```
 
 Next, configure `emit` to use web APIs in its runtime:
