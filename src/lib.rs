@@ -324,10 +324,10 @@ mod crypto {
 }
 
 mod ser {
-    use core::fmt;
     use alloc::string::ToString;
+    use core::fmt;
 
-    use js_sys::{Array, Object};
+    use js_sys::{Array, Object, Reflect, Uint8Array};
     use serde::ser::{
         Error, Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant,
         SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, Serializer, StdError,
@@ -335,11 +335,18 @@ mod ser {
     use wasm_bindgen::prelude::*;
 
     pub fn jsvalue(v: impl Serialize) -> Result<JsValue, JsValue> {
-        v.serialize(JsSerializer).map_err(|e| JsValue::from(e.to_string()))
+        v.serialize(JsSerializer)
+            .map_err(|e| JsValue::from(e.to_string()))
     }
 
     #[derive(Debug)]
     struct JsError;
+
+    impl From<JsValue> for JsError {
+        fn from(_: JsValue) -> Self {
+            JsError
+        }
+    }
 
     impl fmt::Display for JsError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -367,6 +374,7 @@ mod ser {
 
     struct JsObjectSerializer {
         variant: Option<&'static str>,
+        key: Option<JsValue>,
         result: Object,
     }
 
@@ -382,167 +390,204 @@ mod ser {
         type SerializeStructVariant = JsObjectSerializer;
 
         fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(v))
         }
 
         fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_i128(v as i128)
         }
 
         fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_i128(v as i128)
         }
 
         fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_i128(v as i128)
         }
 
         fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_i128(v as i128)
         }
 
         fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            if v.abs() > (i128::MAX >> 74) {
+                Ok(JsValue::bigint_from_str(&v.to_string()))
+            } else {
+                Ok(JsValue::from(v as f64))
+            }
         }
 
         fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_u128(v as u128)
         }
 
         fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_u128(v as u128)
         }
 
         fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_u128(v as u128)
         }
 
         fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            self.serialize_u128(v as u128)
         }
 
         fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            if v > (u128::MAX >> 75) {
+                Ok(JsValue::bigint_from_str(&v.to_string()))
+            } else {
+                Ok(JsValue::from(v as f64))
+            }
         }
 
         fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(v as f64))
         }
 
         fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(v))
         }
 
         fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            let mut buf = [0; 4];
+            let v = v.encode_utf8(&mut buf);
+
+            Ok(JsValue::from(&*v))
         }
 
         fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(v))
         }
 
         fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            let buf = Uint8Array::from(v);
+
+            Ok(JsValue::from(buf))
         }
 
         fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::null())
         }
 
         fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            value.serialize(self)
         }
 
         fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::null())
         }
 
         fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(name))
         }
 
         fn serialize_unit_variant(
             self,
-            name: &'static str,
-            variant_index: u32,
+            _: &'static str,
+            _: u32,
             variant: &'static str,
         ) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(variant))
         }
 
         fn serialize_newtype_struct<T>(
             self,
-            name: &'static str,
+            _: &'static str,
             value: &T,
         ) -> Result<Self::Ok, Self::Error>
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            value.serialize(self)
         }
 
         fn serialize_newtype_variant<T>(
             self,
-            name: &'static str,
-            variant_index: u32,
+            _: &'static str,
+            _: u32,
             variant: &'static str,
             value: &T,
         ) -> Result<Self::Ok, Self::Error>
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            jsvariant(variant, jsvalue(value)?)
         }
 
-        fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-            todo!()
+        fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+            Ok(JsArraySerializer {
+                variant: None,
+                result: Array::new(),
+            })
         }
 
-        fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-            todo!()
+        fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
+            Ok(JsArraySerializer {
+                variant: None,
+                result: Array::new(),
+            })
         }
 
         fn serialize_tuple_struct(
             self,
-            name: &'static str,
-            len: usize,
+            _: &'static str,
+            _: usize,
         ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-            todo!()
+            Ok(JsArraySerializer {
+                variant: None,
+                result: Array::new(),
+            })
         }
 
         fn serialize_tuple_variant(
             self,
-            name: &'static str,
-            variant_index: u32,
+            _: &'static str,
+            _: u32,
             variant: &'static str,
-            len: usize,
+            _: usize,
         ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-            todo!()
+            Ok(JsArraySerializer {
+                variant: Some(variant),
+                result: Array::new(),
+            })
         }
 
-        fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-            todo!()
+        fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+            Ok(JsObjectSerializer {
+                variant: None,
+                key: None,
+                result: Object::new(),
+            })
         }
 
         fn serialize_struct(
             self,
-            name: &'static str,
-            len: usize,
+            _: &'static str,
+            _: usize,
         ) -> Result<Self::SerializeStruct, Self::Error> {
-            todo!()
+            Ok(JsObjectSerializer {
+                variant: None,
+                key: None,
+                result: Object::new(),
+            })
         }
 
         fn serialize_struct_variant(
             self,
-            name: &'static str,
-            variant_index: u32,
+            _: &'static str,
+            _: u32,
             variant: &'static str,
-            len: usize,
+            _: usize,
         ) -> Result<Self::SerializeStructVariant, Self::Error> {
-            todo!()
+            Ok(JsObjectSerializer {
+                variant: Some(variant),
+                key: None,
+                result: Object::new(),
+            })
         }
     }
 
@@ -554,11 +599,13 @@ mod ser {
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            self.result.push(&jsvalue(value)?);
+
+            Ok(())
         }
 
         fn end(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(self.result))
         }
     }
 
@@ -570,11 +617,13 @@ mod ser {
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            self.result.push(&jsvalue(value)?);
+
+            Ok(())
         }
 
         fn end(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(self.result))
         }
     }
 
@@ -586,11 +635,13 @@ mod ser {
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            self.result.push(&jsvalue(value)?);
+
+            Ok(())
         }
 
         fn end(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(self.result))
         }
     }
 
@@ -602,11 +653,17 @@ mod ser {
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            self.result.push(&jsvalue(value)?);
+
+            Ok(())
         }
 
         fn end(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            jsvariant(
+                self.variant
+                    .ok_or_else(|| JsError::custom("missing variant"))?,
+                JsValue::from(self.result),
+            )
         }
     }
 
@@ -618,18 +675,27 @@ mod ser {
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            self.key = Some(jsvalue(key)?);
+
+            Ok(())
         }
 
         fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            let key = self
+                .key
+                .take()
+                .ok_or_else(|| JsError::custom("missing key for a value"))?;
+
+            Reflect::set(&self.result, &key, &jsvalue(value)?)?;
+
+            Ok(())
         }
 
         fn end(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(self.result))
         }
     }
 
@@ -641,11 +707,13 @@ mod ser {
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            Reflect::set(&self.result, &JsValue::from(key), &jsvalue(value)?)?;
+
+            Ok(())
         }
 
         fn end(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            Ok(JsValue::from(self.result))
         }
     }
 
@@ -657,12 +725,26 @@ mod ser {
         where
             T: ?Sized + Serialize,
         {
-            todo!()
+            Reflect::set(&self.result, &JsValue::from(key), &jsvalue(value)?)?;
+
+            Ok(())
         }
 
         fn end(self) -> Result<Self::Ok, Self::Error> {
-            todo!()
+            jsvariant(
+                self.variant
+                    .ok_or_else(|| JsError::custom("missing variant"))?,
+                JsValue::from(self.result),
+            )
         }
+    }
+
+    fn jsvariant(variant: &str, value: JsValue) -> Result<JsValue, JsError> {
+        let result = Object::new();
+
+        Reflect::set(&result, &JsValue::from(variant), &value)?;
+
+        Ok(JsValue::from(result))
     }
 }
 

@@ -8,6 +8,8 @@ Use [`emit`](https://docs.rs/emit) in WebAssembly applications targeting NodeJS 
 
 `emit` itself and some emitters, like [`emit_otlp`](https://docs.rs/emit_otlp) support WebAssembly directly. This library includes support for emitting events to the [Console API](https://developer.mozilla.org/en-US/docs/Web/API/console). It also has alternative clocks and randomness using different web features. These aren't required for configuration, but can be used to more directly control the JavaScript APIs `emit` makes use of.
 
+`emit_web` also supports the `wasm32v1-none` target.
+
 # Getting started
 
 First, add `emit` and `emit_web` to your `Cargo.toml`:
