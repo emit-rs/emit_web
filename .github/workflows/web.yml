@@ -15,6 +15,12 @@ jobs:
       - name: Install Rust toolchain
         run: rustup default nightly
 
+      - name: Install wasm32v1-none
+        run: rustup target add wasm32v1-none
+
+      - name: Embedded
+        run: cargo check --target wasm32v1-none -Zavoid-dev-deps
+
       - name: Install
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 

@@ -9,8 +9,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies.emit]
 version = "1"
-default-features = false
-features = ["std", "implicit_rt"]
 
 [dependencies.emit_web]
 path = "../"

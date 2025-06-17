@@ -14,19 +14,26 @@ exclude = ["asset"]
 [dependencies.emit]
 version = "1"
 default-features = false
-features = ["std", "serde"]
+features = ["serde"]
 
 [dependencies.serde]
 version = "1"
+default-features = false
 
 [dependencies.wasm-bindgen]
 version = "0.2"
-
-[dependencies.serde-wasm-bindgen]
-version = "0.6"
+default-features = false
 
 [dependencies.js-sys]
 version = "0.3"
+default-features = false
+
+[dev-dependencies.wasm-bindgen]
+version = "0.2"
+
+[dev-dependencies.emit]
+version = "1"
+features = ["serde"]
 
 [dev-dependencies.wasm-bindgen-test]
 version = "0.3"
