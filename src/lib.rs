@@ -134,7 +134,7 @@ fn encode_props(props: impl emit::Props) -> JsValue {
             let mut map = serializer.serialize_map(None)?;
 
             let mut r = Ok(());
-            self.0.for_each(|k, v| {
+            let _ = self.0.for_each(|k, v| {
                 match (|| {
                     map.serialize_key(&k)?;
                     map.serialize_value(&v)
