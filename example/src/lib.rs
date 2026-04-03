@@ -2,13 +2,11 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn setup() {
-    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+    // Write panics to the console
+    std::panic::set_hook(Box::new(emit_web::panic_hook(emit_web::console())));
 
-    let _ = emit::setup()
-        .emit_to(emit_web::console())
-        .with_clock(emit_web::date_clock())
-        .with_rng(emit_web::crypto_rng())
-        .try_init();
+    // Write regular events to the console
+    let _ = emit::setup().emit_to(emit_web::console()).try_init();
 }
 
 #[wasm_bindgen]

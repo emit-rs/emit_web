@@ -19,13 +19,19 @@ jobs:
         run: rustup target add wasm32v1-none
 
       - name: Embedded
-        run: cargo check --target wasm32v1-none -Zavoid-dev-deps
+        run: cargo check --no-default-features --target wasm32v1-none -Zavoid-dev-deps
 
       - name: Install
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Default features
         run: wasm-pack test --node
+
+      - name: All features
+        run: wasm-pack test --node --all-features
+
+      - name: No features
+        run: wasm-pack test --node --no-default-features
 
       - name: Example
         working-directory: example

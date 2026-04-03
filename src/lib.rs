@@ -37,9 +37,12 @@ The name of this `setup` function doesn't matter, you'll just need to call it so
 #![deny(missing_docs)]
 #![cfg_attr(not(test), no_std)]
 
+#[cfg(feature = "std")]
+extern crate std;
+
 extern crate alloc;
 
-use alloc::string::ToString;
+use alloc::{boxed::Box, string::ToString};
 use core::{ops::ControlFlow, time::Duration};
 
 use emit::Props as _;
@@ -88,6 +91,8 @@ impl emit::Emitter for ConsoleEmitter {
         true
     }
 }
+
+impl emit::runtime::InternalEmitter for ConsoleEmitter {}
 
 fn encode_extent(extent: Option<&emit::Extent>) -> JsValue {
     let Some(extent) = extent else {
@@ -160,6 +165,29 @@ fn to_jsvalue(v: impl serde::Serialize) -> JsValue {
         Ok(value) => value,
         Err(err) => err,
     }
+}
+
+/**
+A panic hook that emits panics as error events through the given `emitter`.
+
+The given emitter **must not panic**, since it'll be called in response to panics.
+The [`console`] function offers a suitable emitter based on the [Console API](https://developer.mozilla.org/en-US/docs/Web/API/Console_API).
+*/
+#[cfg(feature = "std")]
+pub fn panic_hook(
+    emitter: impl emit::runtime::InternalEmitter + Send + Sync + 'static,
+) -> Box<dyn Fn(&std::panic::PanicHookInfo<'_>) + Send + Sync> {
+    Box::new(move |info| {
+        let err = info.payload_as_str().unwrap_or("unknown");
+        let location = info.location();
+
+        emitter.emit(emit::error_evt!(
+            "Rust panic: {err}",
+            #[emit::optional]
+            #[emit::as_display]
+            location,
+        ));
+    })
 }
 
 // NOTE: `Temporal.Now.instant()` would be good to support when available
