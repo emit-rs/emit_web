@@ -1,6 +1,6 @@
 [package]
 name = "emit_web"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["emit contributors"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
@@ -10,6 +10,9 @@ keywords = ["observability", "wasm", "web"]
 categories = ["development-tools::debugging"]
 edition = "2021"
 exclude = ["asset"]
+
+ [package.metadata.docs.rs]
+ all-features = true
 
 [features]
 default = ["std"]
