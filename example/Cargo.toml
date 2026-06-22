@@ -1,14 +1,14 @@
 [package]
 name = "emit_web_example"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies.emit]
-version = "1"
+version = "2"
 
 [dependencies.emit_web]
 path = "../"
