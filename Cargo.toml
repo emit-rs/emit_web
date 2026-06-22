@@ -8,7 +8,7 @@ repository = "https://github.com/emit-rs/emit_web"
 description = "Instrument Web-based applications using emit."
 keywords = ["observability", "wasm", "web"]
 categories = ["development-tools::debugging"]
-edition = "2021"
+edition = "2024"
 exclude = ["asset"]
 
  [package.metadata.docs.rs]
@@ -19,7 +19,7 @@ default = ["std"]
 std = ["emit/std"]
 
 [dependencies.emit]
-version = "1"
+version = "2"
 default-features = false
 features = ["serde"]
 
@@ -39,7 +39,7 @@ default-features = false
 version = "0.2"
 
 [dev-dependencies.emit]
-version = "1"
+version = "2"
 features = ["serde"]
 
 [dev-dependencies.wasm-bindgen-test]

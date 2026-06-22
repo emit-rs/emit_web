@@ -16,7 +16,7 @@ First, add `emit` and `emit_web` to your `Cargo.toml`:
 
 ```toml
 [dependencies.emit]
-version = "1"
+version = "2"
 
 [dependencies.emit_web]
 version = "0.3.0"
